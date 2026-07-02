@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-white dark:bg-neutral-950 selection:bg-indigo-100 dark:selection:bg-indigo-950 selection:text-indigo-900 dark:selection:text-indigo-200 transition-colors duration-200">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boîte à Outils macOS — Édition Élite 2026</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#e0e7ff',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            },
+            neutral: {
+              50: '#f8f9fa',
+              100: '#f1f3f5',
+              200: '#e9ecef',
+              300: '#dee2e6',
+              750: '#2d2d2d',
+              800: '#1a1a1a',
+              850: '#141414',
+              900: '#0b0b0b',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['SFMono-Regular', 'SF Pro Icons', 'Consolas', 'Liberation Mono', 'Menlo', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom thin scrollbar to keep layout clean */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #e5e7eb;
+      border-radius: 3px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+    /* Smooth focus states for A11y */
+    *:focus-visible {
+      outline: 3px solid #4f46e5;
+      outline-offset: 2px;
+    }
+    .dark *:focus-visible {
+      outline: 3px solid #6366f1;
+    }
+    /* Hide scrollbar utility */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="h-full font-sans text-neutral-800 dark:text-neutral-200 antialiased flex flex-col bg-white dark:bg-neutral-950 transition-colors duration-200">
+
+  <!-- Skip links for keyboard accessibility -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-xl focus:font-bold">
+    Aller au contenu principal
+  </a>
+
+  <!-- Floating Toast Notification System -->
+  <div id="toast" role="alert" aria-live="polite" class="fixed bottom-6 right-6 z-50 transform translate-y-12 opacity-0 pointer-events-none transition-all duration-300 ease-out flex items-center gap-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-4 py-3 rounded-xl shadow-2xl text-sm font-medium border border-neutral-800 dark:border-neutral-200">
+    <svg class="w-5 h-5 text-indigo-400 dark:text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <span id="toast-text">Commande copiée !</span>
+  </div>
+
+  <!-- Command Palette Overlay (Raycast-like) -->
+  <div id="command-palette" class="fixed inset-0 z-50 bg-neutral-950/60 backdrop-blur-sm hidden flex items-start justify-center pt-[10vh] p-4" role="dialog" aria-modal="true" aria-labelledby="palette-title">
+    <div class="bg-white dark:bg-neutral-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden transform scale-95 opacity-0 transition-all duration-200" id="palette-content">
+      <!-- Search input bar -->
+      <div class="flex items-center gap-3 px-4 py-3.5 border-b border-neutral-200 dark:border-neutral-800">
+        <svg class="w-5 h-5 text-neutral-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input type="text" id="palette-input" placeholder="Rechercher une commande, un raccourci ou un outil..." class="w-full bg-transparent border-none text-neutral-900 dark:text-white placeholder-neutral-400 text-sm focus:outline-none" oninput="filterPalette()">
+        <button onclick="closeCommandPalette()" class="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 border border-neutral-200 dark:border-neutral-850 px-1.5 py-0.5 rounded font-mono">ESC</button>
+      </div>
+      <!-- Items Container -->
+      <div class="max-h-[350px] overflow-y-auto p-2 space-y-1" id="palette-items">
+        <div class="text-[10px] font-bold text-neutral-400 uppercase px-3 py-1.5 tracking-wider" id="palette-title">Navigation Rapide</div>
+        
+        <button onclick="paletteNavigate('tab-0')" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">🎛️ <span>0. Cockpit & Diagnostic</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">GOTO 0</kbd>
+        </button>
+        <button onclick="paletteNavigate('tab-1')" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">💡 <span>1. Transition & Bases</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">GOTO 1</kbd>
+        </button>
+        <button onclick="paletteNavigate('tab-2')" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">📂 <span>2. Finder & Data Flux</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">GOTO 2</kbd>
+        </button>
+        <button onclick="paletteNavigate('tab-3')" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">🖥️ <span>3. Workspace & Tiling</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">GOTO 3</kbd>
+        </button>
+        <button onclick="paletteNavigate('tab-4')" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">⌨️ <span>4. Raccourcis Masterclass</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">GOTO 4</kbd>
+        </button>
+        <button onclick="paletteNavigate('tab-5')" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">📦 <span>5. Logithèque Lean Stack</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">GOTO 5</kbd>
+        </button>
+        <button onclick="paletteNavigate('tab-6')" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">🌡️ <span>6. Thermique & Énergie</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">GOTO 6</kbd>
+        </button>
+        <button onclick="paletteNavigate('tab-7')" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">🛡️ <span>7. Sécurité & Hygiène</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">GOTO 7</kbd>
+        </button>
+
+        <div class="text-[10px] font-bold text-neutral-400 uppercase px-3 py-1.5 tracking-wider mt-2">Actions Système</div>
+        <button onclick="toggleThemePalette()" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">🌓 <span>Basculer le thème Sombre / Clair</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">THEME</kbd>
+        </button>
+        <button onclick="paletteCopyBrew()" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between hover:bg-neutral-100 dark:hover:bg-neutral-800 transition text-sm">
+          <span class="flex items-center gap-3">🍺 <span>Copier l'installateur Brew groupé</span></span>
+          <kbd class="text-[10px] bg-neutral-100 dark:bg-neutral-850 border border-neutral-200 dark:border-neutral-800 px-1.5 py-0.5 rounded text-neutral-400">COPY BREW</kbd>
+        </button>
+        <button onclick="paletteResetProgress()" class="palette-item w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition text-sm">
+          <span class="flex items-center gap-3">🔄 <span>Réinitialiser toute la progression</span></span>
+          <kbd class="text-[10px] bg-red-100 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-1.5 py-0.5 rounded">RESET</kbd>
+        </button>
+      </div>
+      <!-- Footer details -->
+      <div class="bg-neutral-50 dark:bg-neutral-850 px-4 py-2 text-[11px] text-neutral-400 dark:text-neutral-500 border-t border-neutral-200 dark:border-neutral-800 flex justify-between">
+        <span>Naviguez avec <kbd class="font-mono bg-neutral-200 dark:bg-neutral-800 px-1 rounded">↑↓</kbd> et <kbd class="font-mono bg-neutral-200 dark:bg-neutral-800 px-1 rounded">Entrée</kbd></span>
+        <span>Recherche globale intégrée</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navigation Header (Sticky & Tabbed) -->
+  <header class="sticky top-0 z-40 bg-white/95 dark:bg-neutral-950/95 backdrop-blur border-b border-neutral-200 dark:border-neutral-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between py-4 gap-4">
+        <!-- Title & Spec Badges -->
+        <div>
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-450 border border-indigo-100 dark:border-indigo-900/50">macOS Tahoe 26</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700">Apple Silicon & Intel</span>
+          </div>
+          <h1 class="text-xl font-bold text-neutral-900 dark:text-white tracking-tight flex items-center gap-2">
+            Boîte à Outils Numérique 
+            <span class="text-neutral-300 dark:text-neutral-700 font-light" aria-hidden="true">|</span> 
+            <span class="text-indigo-600 dark:text-indigo-400 font-medium">Console Pro</span>
+          </h1>
+        </div>
+
+        <!-- Global Interactive Search and Utilities -->
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- Search Bar with Raycast shortcut indicator -->
+          <button onclick="openCommandPalette()" class="relative w-full sm:w-64 text-left flex items-center justify-between pl-3 pr-2 py-2 text-xs bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl hover:border-neutral-300 dark:hover:border-neutral-700 text-neutral-450 transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <span class="flex items-center gap-2">
+              <svg class="h-4 w-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <span>Commandes rapides...</span>
+            </span>
+            <kbd class="text-[10px] bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+          </button>
+
+          <!-- Theme Switcher -->
+          <button id="theme-toggle" class="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-850 transition" aria-label="Basculer le Thème">
+            <!-- Sun icon -->
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m14.071-7.071l-.707.707M6.343 17.657l-.707.707m2.828-9.9a5 5 0 117.071 7.071l-7.071-7.071z"></path>
+            </svg>
+            <!-- Moon icon -->
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
+          </button>
+
+          <!-- Progress Tracker -->
+          <div class="flex items-center gap-4 bg-neutral-50 dark:bg-neutral-900 px-4 py-2 rounded-xl border border-neutral-100 dark:border-neutral-800">
+            <div class="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider hidden sm:block">Progression</div>
+            <div class="flex items-center gap-2">
+              <div class="w-20 bg-neutral-200 dark:bg-neutral-800 h-2 rounded-full overflow-hidden" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="progress-bar-container">
+                <div id="global-progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-500 ease-out"></div>
+              </div>
+              <span id="global-progress-text" class="text-sm font-bold text-indigo-600 dark:text-indigo-400">0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Tab Container -->
+      <nav class="flex space-x-1 overflow-x-auto no-scrollbar py-2 -mb-px" role="tablist" aria-label="Modules d'optimisation macOS">
+        <button id="tab-0" role="tab" aria-selected="true" aria-controls="panel-0" tabindex="0" class="flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border transition-all duration-150 focus:outline-none bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400">
+          0. Cockpit & Profils
+        </button>
+        <button id="tab-1" role="tab" aria-selected="false" aria-controls="panel-1" tabindex="-1" class="flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all duration-150 focus:outline-none">
+          1. Transition & Bases
+        </button>
+        <button id="tab-2" role="tab" aria-selected="false" aria-controls="panel-2" tabindex="-1" class="flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all duration-150 focus:outline-none">
+          2. Finder & Data Flux
+        </button>
+        <button id="tab-3" role="tab" aria-selected="false" aria-controls="panel-3" tabindex="-1" class="flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all duration-150 focus:outline-none">
+          3. Workspace & Tiling
+        </button>
+        <button id="tab-4" role="tab" aria-selected="false" aria-controls="panel-4" tabindex="-1" class="flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all duration-150 focus:outline-none">
+          4. Raccourcis Masterclass
+        </button>
+        <button id="tab-5" role="tab" aria-selected="false" aria-controls="panel-5" tabindex="-1" class="flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all duration-150 focus:outline-none">
+          5. Logithèque Lean Stack
+        </button>
+        <button id="tab-6" role="tab" aria-selected="false" aria-controls="panel-6" tabindex="-1" class="flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all duration-150 focus:outline-none">
+          6. Thermique & Énergie
+        </button>
+        <button id="tab-7" role="tab" aria-selected="false" aria-controls="panel-7" tabindex="-1" class="flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all duration-150 focus:outline-none">
+          7. Sécurité & Hygiène
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container with Bento Box grids inside panels -->
+  <main id="main-content" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 overflow-y-auto">
+
+    <!-- ================================= PANEL 0: COCKPIT & ACCUEIL (NEW) ================================= -->
+    <section id="panel-0" role="tabpanel" aria-labelledby="tab-0" class="space-y-6 block">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Welcome Hero (Bento Big) -->
+        <div class="lg:col-span-2 bg-gradient-to-br from-indigo-50 via-white to-white dark:from-neutral-900 dark:to-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8 flex flex-col justify-between shadow-sm">
+          <div>
+            <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-wider uppercase mb-2">Centre de contrôle macOS</div>
+            <h2 class="text-3xl font-extrabold text-neutral-900 dark:text-white mb-4 tracking-tight leading-none">
+              Transformez votre Mac en <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-650 to-purple-600 dark:from-indigo-450 dark:to-purple-450">machine de guerre ultra-productive</span>.
+            </h2>
+            <p class="text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl text-sm md:text-base">
+              Bienvenue sur votre cockpit d'entraînement et d'optimisation. Ce portail autonome vous guide pas à pas pour supprimer la friction cognitive, automatiser vos tâches et calibrer vos réglages système.
+            </p>
+          </div>
+          <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-neutral-200 dark:border-neutral-800 pt-6">
+            <button onclick="openCommandPalette()" class="flex items-center justify-between p-3 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-850 hover:border-indigo-500 dark:hover:border-indigo-500 transition shadow-sm text-left">
+              <span class="flex items-center gap-3">
+                <span class="text-lg">⚡</span>
+                <span class="text-xs">
+                  <strong class="block text-neutral-900 dark:text-white">Lanceur Rapide</strong>
+                  <span class="text-neutral-400">Rechercher des commandes (⌘K)</span>
+                </span>
+              </span>
+              <span class="text-xs text-neutral-400 font-mono">⏎</span>
+            </button>
+            <div class="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-900/60 rounded-2xl border border-neutral-100 dark:border-neutral-850">
+              <span class="text-lg">🔒</span>
+              <span class="text-xs">
+                <strong class="block text-neutral-900 dark:text-white">100% Hors-ligne</strong>
+                <span class="text-neutral-400">Vos progressions restent locales.</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Profile Select (Bento Card) -->
+        <div class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 flex flex-col justify-between shadow-sm">
+          <div>
+            <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-2 flex items-center gap-2">
+              <span>🎯</span> Profil d'Usage macOS
+            </h3>
+            <p class="text-xs text-neutral-500 mb-4 leading-relaxed">
+              Sélectionnez un profil pour adapter la recommandation de la logithèque (Onglet 5).
+            </p>
+            <div class="space-y-2.5">
+              <button onclick="selectProfile('dev')" id="prof-btn-dev" class="profile-btn w-full px-4 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300">
+                <span class="flex items-center gap-2.5">💻 <span>Développeur / Pro</span></span>
+                <span class="text-[10px] bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded">Activer</span>
+              </button>
+              <button onclick="selectProfile('creative')" id="prof-btn-creative" class="profile-btn w-full px-4 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300">
+                <span class="flex items-center gap-2.5">🎨 <span>Créatif / Designer</span></span>
+                <span class="text-[10px] bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded">Activer</span>
+              </button>
+              <button onclick="selectProfile('office')" id="prof-btn-office" class="profile-btn w-full px-4 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300">
+                <span class="flex items-center gap-2.5">📊 <span>Bureautique Efficace</span></span>
+                <span class="text-[10px] bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded">Activer</span>
+              </button>
+            </div>
+          </div>
+          <div class="text-[10px] text-neutral-400 mt-4 leading-relaxed pt-3 border-t border-neutral-100 dark:border-neutral-850">
+            Le profil adapte instantanément l'installateur groupé Homebrew.
+          </div>
+        </div>
+
+        <!-- Modules Progress Grid -->
+        <div class="lg:col-span-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="font-bold text-neutral-900 dark:text-white text-lg">Suivi des Objectifs par Module</h3>
+            <span class="text-xs text-neutral-400">Cliquez pour vous rendre sur un module</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <button onclick="goToTab('tab-1')" class="group p-4 bg-neutral-50 hover:bg-indigo-50/40 dark:bg-neutral-950 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-850 hover:border-indigo-300 rounded-2xl text-left transition-all">
+              <span class="text-xs font-bold text-neutral-400 group-hover:text-indigo-600 transition">Module 1</span>
+              <h4 class="font-bold text-sm text-neutral-900 dark:text-white mt-1">Transition & Bases</h4>
+              <div class="mt-4 flex items-center gap-2">
+                <div class="flex-1 bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                  <div id="m1-progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                </div>
+                <span id="m1-progress-text" class="text-xs font-semibold text-neutral-400">0%</span>
+              </div>
+            </button>
+
+            <button onclick="goToTab('tab-2')" class="group p-4 bg-neutral-50 hover:bg-indigo-50/40 dark:bg-neutral-950 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-850 hover:border-indigo-300 rounded-2xl text-left transition-all">
+              <span class="text-xs font-bold text-neutral-400 group-hover:text-indigo-600 transition">Module 2</span>
+              <h4 class="font-bold text-sm text-neutral-900 dark:text-white mt-1">Finder & Data Flux</h4>
+              <div class="mt-4 flex items-center gap-2">
+                <div class="flex-1 bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                  <div id="m2-progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                </div>
+                <span id="m2-progress-text" class="text-xs font-semibold text-neutral-400">0%</span>
+              </div>
+            </button>
+
+            <button onclick="goToTab('tab-3')" class="group p-4 bg-neutral-50 hover:bg-indigo-50/40 dark:bg-neutral-950 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-850 hover:border-indigo-300 rounded-2xl text-left transition-all">
+              <span class="text-xs font-bold text-neutral-400 group-hover:text-indigo-600 transition">Module 3</span>
+              <h4 class="font-bold text-sm text-neutral-900 dark:text-white mt-1">Workspace & Tiling</h4>
+              <div class="mt-4 flex items-center gap-2">
+                <div class="flex-1 bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                  <div id="m3-progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                </div>
+                <span id="m3-progress-text" class="text-xs font-semibold text-neutral-400">0%</span>
+              </div>
+            </button>
+
+            <button onclick="goToTab('tab-7')" class="group p-4 bg-neutral-50 hover:bg-indigo-50/40 dark:bg-neutral-950 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-850 hover:border-indigo-300 rounded-2xl text-left transition-all">
+              <span class="text-xs font-bold text-neutral-400 group-hover:text-indigo-600 transition">Module 7</span>
+              <h4 class="font-bold text-sm text-neutral-900 dark:text-white mt-1">Sécurité & Hygiène</h4>
+              <div class="mt-4 flex items-center gap-2">
+                <div class="flex-1 bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+                  <div id="m7-progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                </div>
+                <span id="m7-progress-text" class="text-xs font-semibold text-neutral-400">0%</span>
+              </div>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Keyboard Dojo / Interactive Arena (Highly Interactive Widget) -->
+        <div class="lg:col-span-2 bg-neutral-950 text-white rounded-3xl p-6 border border-neutral-800 shadow-md flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Arène Interactive</span>
+              <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-900 px-2 py-0.5 rounded-full font-semibold">Dojo du Clavier</span>
+            </div>
+            <h3 class="font-extrabold text-xl mb-2">Mémoire Musculaire macOS</h3>
+            <p class="text-xs text-neutral-400 mb-6 leading-relaxed max-w-lg">
+              Cliquez sur le Dojo pour activer l'écoute, puis réalisez la combinaison demandée pour graver vos réflexes système.
+            </p>
+
+            <!-- Interactive Keyboard Visualizer Card -->
+            <div id="dojo-arena" tabindex="0" class="relative group bg-neutral-900 border border-neutral-800 hover:border-indigo-500 rounded-2xl p-5 text-center cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <!-- Dojo State Label -->
+              <div id="dojo-focus-indicator" class="absolute top-2 right-2 flex items-center gap-1.5 text-[9px] font-bold text-amber-500 bg-amber-950/40 border border-amber-900 px-2 py-0.5 rounded-md">
+                <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping"></span>
+                CLIQUEZ POUR COMMENCER
+              </div>
+
+              <div class="mb-4">
+                <span class="text-[11px] text-neutral-500 uppercase font-bold tracking-wider block">DÉFI EN COURS</span>
+                <span id="dojo-challenge-text" class="text-lg font-bold text-white block mt-1">Prendre une capture d'écran d'une zone précise</span>
+                <span id="dojo-target-combination" class="text-xs text-indigo-400 font-mono font-bold mt-1 block">⌘ + ⇧ + 4</span>
+              </div>
+
+              <!-- Visual Key Indicators -->
+              <div class="flex justify-center items-center gap-2 py-2">
+                <div id="key-ctrl" class="px-2.5 py-1.5 rounded-lg bg-neutral-800 border border-neutral-750 text-xs font-bold text-neutral-500 transition-all font-mono">⌃ Ctrl</div>
+                <div id="key-alt" class="px-2.5 py-1.5 rounded-lg bg-neutral-800 border border-neutral-750 text-xs font-bold text-neutral-500 transition-all font-mono">⌥ Option</div>
+                <div id="key-shift" class="px-2.5 py-1.5 rounded-lg bg-neutral-800 border border-neutral-750 text-xs font-bold text-neutral-500 transition-all font-mono">⇧ Shift</div>
+                <div id="key-cmd" class="px-2.5 py-1.5 rounded-lg bg-neutral-800 border border-neutral-750 text-xs font-bold text-neutral-500 transition-all font-mono">⌘ Cmd</div>
+                <div id="key-char" class="px-3 py-1.5 rounded-lg bg-neutral-800 border border-neutral-750 text-xs font-bold text-neutral-500 transition-all font-mono">-</div>
+              </div>
+
+              <div class="text-[10px] text-neutral-500 mt-3 font-medium">
+                Touches détectées : <span id="dojo-pressed-keys" class="font-mono text-neutral-300">Aucune</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-4 border-t border-neutral-900 pt-4 mt-6">
+            <span id="dojo-streak-container" class="text-xs text-neutral-400 font-medium">Série de succès : <strong id="dojo-streak" class="text-emerald-450 font-bold font-mono">0</strong></span>
+            <button onclick="nextDojoChallenge()" class="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+              <span>Passer le défi</span> ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick System Calibration Summary Card -->
+        <div class="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 flex flex-col justify-between shadow-sm">
+          <div>
+            <h3 class="font-bold text-neutral-900 dark:text-white text-base mb-1">Raccourcis Favoris</h3>
+            <p class="text-xs text-neutral-500 mb-4">Mémorisez ces 3 piliers indispensables.</p>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-2 bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200/50 dark:border-neutral-850">
+                <span class="text-xs font-medium text-neutral-600 dark:text-neutral-400">Aperçu rapide</span>
+                <kbd class="text-[11px] font-mono font-bold bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded">Espace</kbd>
+              </div>
+              <div class="flex items-center justify-between p-2 bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200/50 dark:border-neutral-850">
+                <span class="text-xs font-medium text-neutral-600 dark:text-neutral-400">Forcer à quitter</span>
+                <kbd class="text-[11px] font-mono font-bold bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded">⌘ ⌥ Esc</kbd>
+              </div>
+              <div class="flex items-center justify-between p-2 bg-white dark:bg-neutral-950 rounded-xl border border-neutral-200/50 dark:border-neutral-850">
+                <span class="text-xs font-medium text-neutral-600 dark:text-neutral-400">Déplacement</span>
+                <kbd class="text-[11px] font-mono font-bold bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded">⌘ ⌥ V</kbd>
+              </div>
+            </div>
+          </div>
+          <button onclick="goToTab('tab-4')" class="mt-4 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition">
+            Consulter la Masterclass Raccourcis
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================= PANEL 1: TRANSITION & BASES ================================= -->
+    <section id="panel-1" role="tabpanel" aria-labelledby="tab-1" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Welcome Card (Bento Big) -->
+        <div class="lg:col-span-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-wider uppercase mb-1">Entrée dans l'excellence</div>
+            <h2 class="text-2xl font-bold text-neutral-900 dark:text-white mb-4 tracking-tight">Vaincre la friction cognitive sur macOS</h2>
+            <p class="text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-2xl text-sm">
+              Votre Mac n'est plus un simple écran de consultation, mais une extension de votre cognition. Sous l'interface <strong class="text-neutral-900 dark:text-white font-semibold">Liquid Glass UI</strong>, la puissance brute des puces M1-M5 ne devient un avantage réel que si elle est orchestrée par une configuration logicielle experte.
+            </p>
+          </div>
+          <div class="mt-8 border-t border-neutral-200 dark:border-neutral-800 pt-4 flex flex-wrap gap-4 text-xs font-medium text-neutral-500">
+            <div>💡 <span class="font-semibold text-neutral-800 dark:text-neutral-200">Concept :</span> Remplacer le curseur par des commandes nerveuses.</div>
+            <div>🖥️ <span class="font-semibold text-neutral-800 dark:text-neutral-200">Cible :</span> Limiter le ratio de clics de 4 à 1.</div>
+          </div>
+        </div>
+
+        <!-- Quick Switch Checklist (Interactive Checklist) -->
+        <div class="bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-4">Initialisation Ergonomique</h3>
+            <div class="space-y-3">
+              <label class="flex items-start gap-3 p-2 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded-xl cursor-pointer transition">
+                <input type="checkbox" data-chk="setup-trackpad-click" class="w-5 h-5 rounded border-neutral-300 dark:border-neutral-750 text-indigo-600 focus:ring-indigo-500 mt-0.5">
+                <span class="text-sm text-neutral-600 dark:text-neutral-400 select-none">Activer <strong class="text-neutral-800 dark:text-neutral-200">"Toucher pour cliquer"</strong></span>
+              </label>
+              <label class="flex items-start gap-3 p-2 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded-xl cursor-pointer transition">
+                <input type="checkbox" data-chk="setup-trackpad-speed" class="w-5 h-5 rounded border-neutral-300 dark:border-neutral-750 text-indigo-600 focus:ring-indigo-500 mt-0.5">
+                <span class="text-sm text-neutral-600 dark:text-neutral-400 select-none">Accélérer la <strong class="text-neutral-800 dark:text-neutral-200">vitesse du pointeur</strong> au max</span>
+              </label>
+              <label class="flex items-start gap-3 p-2 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded-xl cursor-pointer transition">
+                <input type="checkbox" data-chk="setup-trackpad-three" class="w-5 h-5 rounded border-neutral-300 dark:border-neutral-750 text-indigo-600 focus:ring-indigo-500 mt-0.5">
+                <span class="text-sm text-neutral-600 dark:text-neutral-400 select-none">Activer le <strong class="text-neutral-800 dark:text-neutral-200">glissement à trois doigts</strong></span>
+              </label>
+            </div>
+          </div>
+          <div class="text-xs text-neutral-400 dark:text-neutral-500 mt-4">
+            Chemin : Réglages Système > Accessibilité > Contrôle du pointeur > Options du trackpad.
+          </div>
+        </div>
+
+        <!-- Windows vs macOS Core Rules -->
+        <div class="lg:col-span-3 bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-4">Ajustement des Réflexes Windows ➔ macOS</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800">
+              <div class="font-bold text-sm text-neutral-900 dark:text-white mb-2">Le Piège de la Croix Rouge</div>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Sur Mac, cliquer sur le bouton rouge d'une fenêtre ne ferme pas le programme. L'app reste active en RAM. <span class="font-bold text-neutral-850 dark:text-neutral-200">Prenez le réflexe d'utiliser ⌘ + Q pour éteindre complètement.</span>
+              </p>
+            </div>
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800">
+              <div class="font-bold text-sm text-neutral-900 dark:text-white mb-2">Le Déplacement de Fichier (Pas de couper classique)</div>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Le raccourci ⌘+X ne fonctionne pas sur les fichiers. Pour déplacer un fichier sans le dupliquer : copiez-le (<strong class="text-neutral-850 dark:text-neutral-200">⌘ + C</strong>), puis forcez le déplacement via <strong class="text-neutral-850 dark:text-neutral-200">⌘ + ⌥ + V</strong>.
+              </p>
+            </div>
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800">
+              <div class="font-bold text-sm text-neutral-900 dark:text-white mb-2">Installation & Désinstallation Lean</div>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Oubliez les assistants encombrants. Glissez simplement l'application dans le dossier <strong class="text-neutral-850 dark:text-neutral-200">Applications</strong>. Pour désinstaller proprement, utilisez AppCleaner pour chasser les résidus.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Keyboard customization bonus -->
+        <div class="lg:col-span-3 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6">
+          <div class="bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 p-4 rounded-xl flex-shrink-0">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h4 class="font-bold text-neutral-900 dark:text-white text-base mb-1">Optimisation Avancée : Le Hyper Key</h4>
+            <p class="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+              Pour débloquer une panoplie de raccourcis sans collision, utilisez <strong class="text-neutral-900 dark:text-white">Karabiner-Elements</strong> pour réaffecter la touche Verrouillage Majuscule (souvent inutile) en touche "Hyper" (qui simule l'appui simultané de <kbd class="px-1 bg-white dark:bg-neutral-800 rounded border">⌥</kbd>+<kbd class="px-1 bg-white dark:bg-neutral-800 rounded border">⌘</kbd>+<kbd class="px-1 bg-white dark:bg-neutral-800 rounded border">⇧</kbd>+<kbd class="px-1 bg-white dark:bg-neutral-800 rounded border">⌃</kbd>).
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================= PANEL 2: FINDER & DATA FLUX ================================= -->
+    <section id="panel-2" role="tabpanel" aria-labelledby="tab-2" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Finder Configuration -->
+        <div class="lg:col-span-2 bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-1">Configuration Structurée du Finder</h3>
+          <p class="text-sm text-neutral-500 mb-6">Ne naviguez jamais à l'aveugle. Votre système de fichiers doit afficher sa structure complète.</p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+              <div class="border-l-2 border-indigo-600 pl-3">
+                <span class="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Étape 1 : Visibilité Globale</span>
+                <p class="text-sm text-neutral-700 dark:text-neutral-300 mt-1">Activez les barres clés via le menu <strong class="text-neutral-900 dark:text-white">Présentation</strong> du Finder :</p>
+                <ul class="text-xs text-neutral-500 list-disc list-inside mt-2 space-y-1">
+                  <li><strong class="text-neutral-700 dark:text-neutral-300">Afficher la barre de chemin d'accès</strong></li>
+                  <li><strong class="text-neutral-700 dark:text-neutral-300">Afficher la barre d'état</strong> (espace SSD restant)</li>
+                </ul>
+              </div>
+
+              <div class="border-l-2 border-indigo-600 pl-3">
+                <span class="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">Étape 2 : Cible par Défaut</span>
+                <p class="text-sm text-neutral-700 dark:text-neutral-300 mt-1">Ouvrez les réglages Finder (<strong class="text-neutral-900 dark:text-white">⌘ + ,</strong>) et modifiez "Les nouvelles fenêtres s'ouvrent sur" de "Récents" vers votre dossier personnel.</p>
+              </div>
+            </div>
+
+            <div class="bg-neutral-50 dark:bg-neutral-900 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 flex flex-col justify-between">
+              <div>
+                <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Astuce Terminal Puissante</span>
+                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">
+                  Pour afficher de manière permanente les fichiers cachés (commençant par un point) dans le Finder sans passer par le terminal, utilisez la combinaison universelle : <br><strong class="text-neutral-900 dark:text-white font-mono">⌘ + ⇧ + . (point)</strong>
+                </p>
+              </div>
+              <div class="mt-4">
+                <label class="flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                  <input type="checkbox" data-chk="finder-pro-setup" class="w-4 h-4 text-indigo-600 rounded border-neutral-300 dark:border-neutral-750">
+                  <span>Finder configuré en mode Pro</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spotlight : L'Interpréteur de Commandes -->
+        <div class="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-wider uppercase mb-1">Spotlight & Alternatives</div>
+            <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-2">Interpréteur de Commandes</h3>
+            <p class="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4">
+              En 2026, Spotlight dépasse largement la recherche de fichiers simple. Pour aller encore plus loin, testez <strong class="text-indigo-600 dark:text-indigo-400">Raycast</strong>, l'alternative survitaminée qui intègre des dizaines d'extensions (recherche GitHub, gestion de presse-papiers, contrôle de musique).
+            </p>
+            <div class="space-y-2">
+              <div class="bg-white dark:bg-neutral-950 p-2.5 rounded-lg border border-neutral-200 dark:border-neutral-850 text-xs flex justify-between items-center font-mono">
+                <span class="text-neutral-800 dark:text-neutral-200">"150 USD en EUR"</span>
+                <span class="text-indigo-600 dark:text-indigo-400 text-[10px] font-sans font-bold">Conversion</span>
+              </div>
+              <div class="bg-white dark:bg-neutral-950 p-2.5 rounded-lg border border-neutral-200 dark:border-neutral-850 text-xs flex justify-between items-center font-mono">
+                <span class="text-neutral-800 dark:text-neutral-200">"sqrt(144) * 5"</span>
+                <span class="text-indigo-600 dark:text-indigo-400 text-[10px] font-sans font-bold">Calculateur</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-[11px] text-neutral-400 dark:text-neutral-500 mt-4 italic">
+            La touche d'activation idéale de Raycast est ⌥ + Espace.
+          </div>
+        </div>
+
+        <!-- Option (⌥) Deep Interactivity -->
+        <div class="lg:col-span-3 bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-1">L'Anatomie Tactique de la Touche Option (⌥)</h3>
+          <p class="text-sm text-neutral-500 mb-4">La touche Option est le pivot secret pour débloquer les interfaces de diagnostic bas niveau du système.</p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl hover:border-neutral-350 border border-transparent transition">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">⌥ + Clic (Wi-Fi)</span>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">Révèle le signal <strong class="text-neutral-850 dark:text-white font-semibold">RSSI</strong>, le protocole Wi-Fi et l'adresse IP locale en un coup d'œil.</p>
+            </div>
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl hover:border-neutral-350 border border-transparent transition">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">⌥ + Clic (Son)</span>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">Affiche la liste complète des périphériques d'entrée (microphones) et de sortie sans ouvrir les Réglages.</p>
+            </div>
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl hover:border-neutral-350 border border-transparent transition">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">⌥ + Bouton Vert (Fenêtres)</span>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">Permet d'ajuster rapidement la fenêtre en plein écran classique plutôt qu'en mode Space dédié.</p>
+            </div>
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl hover:border-neutral-350 border border-transparent transition">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">⌥ + Clic Droit (Dock)</span>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1">Transforme instantanément l'action standard "Quitter" d'un processus en option de "Forcer à quitter".</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================= PANEL 3: WORKSPACE & TILING ================================= -->
+    <section id="panel-3" role="tabpanel" aria-labelledby="tab-3" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Spatial Management Bento Block -->
+        <div class="lg:col-span-2 bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h3 class="font-bold text-neutral-900 dark:text-white text-lg">Bureaux Virtuels & Tiling (macOS Tahoe 26)</h3>
+              <p class="text-sm text-neutral-500">Mosaïque de fenêtres pour éliminer le fléau du "context switching"</p>
+            </div>
+            <span class="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded text-[10px] font-bold text-neutral-600 dark:text-neutral-450">Natif vs Rectangle / Aerospace</span>
+          </div>
+
+          <div class="space-y-4">
+            <p class="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+              La fatigue mentale provient souvent du désordre visuel. L'interface Liquid Glass UI propose un magnétisme natif performant. Utilisez <strong class="text-neutral-900 dark:text-white">Control + Option + Flèches</strong> pour ordonner en tiers ou quarts d'écrans. Pour les power-users, testez <strong class="text-indigo-600 dark:text-indigo-400">AeroSpace</strong> (un gestionnaire de tiling géré par clavier façon i3wm).
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800">
+                <span class="text-xs font-bold text-neutral-900 dark:text-white">La méthode Lean (Dédier des espaces)</span>
+                <p class="text-xs text-neutral-500 mt-1">
+                  Créez 3 ou 4 bureaux dans Mission Control. Fixez vos applications critiques sur des bureaux spécifiques (Clic droit Dock > Options > Ce bureau). Votre cerveau associe chaque "Space" à une tâche fixe.
+                </p>
+              </div>
+              <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800">
+                <span class="text-xs font-bold text-neutral-900 dark:text-white">Stage Manager : Oui ou non ?</span>
+                <p class="text-xs text-neutral-500 mt-1">
+                  Activez-le uniquement si vous possédez un grand écran externe (>= 27 pouces) pour garder un historique de vos groupes de travail. Sur écran de MacBook portable, cela consomme trop d'espace utile.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Hot Corners Simulator/Setup -->
+        <div class="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">Vitesse d'exécution physique</div>
+            <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-3">Coins Actifs (Hot Corners)</h3>
+            <p class="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4">
+              Attribuez à vos gestes physiques une fonction immédiate de sécurité ou de fluidité. Dans les réglages macOS, affectez les quatre angles de l'écran :
+            </p>
+            <div class="relative w-44 h-24 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl mx-auto flex items-center justify-center shadow-inner">
+              <div class="absolute top-1 left-1 text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-neutral-50 dark:bg-neutral-900 px-1 py-0.5 rounded border border-neutral-200/50 dark:border-neutral-800">Mission Control</div>
+              <div class="absolute top-1 right-1 text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-neutral-50 dark:bg-neutral-900 px-1 py-0.5 rounded border border-neutral-200/50 dark:border-neutral-800">Bureaux</div>
+              <div class="absolute bottom-1 left-1 text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-neutral-50 dark:bg-neutral-900 px-1 py-0.5 rounded border border-neutral-200/50 dark:border-neutral-800">Verrouiller</div>
+              <div class="absolute bottom-1 right-1 text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-neutral-50 dark:bg-neutral-900 px-1 py-0.5 rounded border border-neutral-200/50 dark:border-neutral-800">Écran de veille</div>
+              <div class="w-10 h-6 bg-neutral-100 dark:bg-neutral-850 rounded border border-neutral-200 dark:border-neutral-700"></div>
+            </div>
+          </div>
+          <div>
+            <label class="flex items-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer mt-4">
+              <input type="checkbox" data-chk="hot-corners-setup" class="w-4 h-4 text-indigo-600 rounded border-neutral-300 dark:border-neutral-750">
+              <span>Coins actifs configurés</span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================= PANEL 4: RACCOURCIS MASTERCLASS ================================= -->
+    <section id="panel-4" role="tabpanel" aria-labelledby="tab-4" class="space-y-6 hidden">
+      <div class="bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 gap-4 mb-6">
+          <div>
+            <h3 class="font-bold text-neutral-900 dark:text-white text-xl tracking-tight">Le Catalogue d'Ancrage de la Mémoire Musculaire</h3>
+            <p class="text-sm text-neutral-500">Un cockpit n'a pas de souris : maîtrisez l'exécution nerveuse à une main.</p>
+          </div>
+          
+          <!-- Filter Controls -->
+          <div class="flex flex-wrap gap-2" role="group" aria-label="Filtre des raccourcis">
+            <button onclick="filterShortcuts('all', this)" class="shortcut-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 transition">Tout</button>
+            <button onclick="filterShortcuts('system', this)" class="shortcut-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">Système</button>
+            <button onclick="filterShortcuts('finder', this)" class="shortcut-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">Finder</button>
+            <button onclick="filterShortcuts('window', this)" class="shortcut-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">Fenêtres</button>
+            <button onclick="filterShortcuts('text', this)" class="shortcut-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">Web & Texte</button>
+            <button onclick="filterShortcuts('captures', this)" class="shortcut-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition">Captures</button>
+          </div>
+        </div>
+
+        <!-- Shortcuts Grid Container -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="shortcuts-grid">
+          
+          <!-- System shortcuts -->
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="system">
+            <div>
+              <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-450 uppercase">Spotlight</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + Espace</h4>
+              <p class="text-xs text-neutral-500 mt-2">Moteur universel (applications, conversions, calculs).</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="system">
+            <div>
+              <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-450 uppercase">Préférences</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + , (virgule)</h4>
+              <p class="text-xs text-neutral-500 mt-2">Ouvre instantanément les réglages de n'importe quelle app au premier plan.</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="system">
+            <div>
+              <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-450 uppercase">Presse-papiers Tahoe</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌥ + ⌘ + Control + V</h4>
+              <p class="text-xs text-neutral-500 mt-2">Accède à l'historique de votre presse-papiers (10 derniers formats).</p>
+            </div>
+          </div>
+
+          <!-- Finder shortcuts -->
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="finder">
+            <div>
+              <span class="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">Aperçu Rapide</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">Barre Espace</h4>
+              <p class="text-xs text-neutral-500 mt-2">Quick Look : prévisualise, signe un PDF, rogne une image sans ouvrir d'app.</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="finder">
+            <div>
+              <span class="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">Inspecteur Persistant</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + Option + I</h4>
+              <p class="text-xs text-neutral-500 mt-2">Affiche des infos qui s'actualisent dynamiquement à chaque clic de fichier.</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="finder">
+            <div>
+              <span class="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">Création de Dossier</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + ⇧ + ⌥ + N</h4>
+              <p class="text-xs text-neutral-500 mt-2">Génère instantanément un nouveau dossier contenant tous les éléments sélectionnés.</p>
+            </div>
+          </div>
+
+          <!-- Window shortcuts -->
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="window">
+            <div>
+              <span class="text-[10px] font-bold text-amber-600 dark:text-amber-450 uppercase">Masquage d'App</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + H</h4>
+              <p class="text-xs text-neutral-500 mt-2">Vide instantanément la vue sans quitter ni fermer les instances d'applications.</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="window">
+            <div>
+              <span class="text-[10px] font-bold text-amber-600 dark:text-amber-450 uppercase">Tiling Tahoe</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">Control + Option + Flèches</h4>
+              <p class="text-xs text-neutral-500 mt-2">Organise en moitiés, tiers ou quarts d'écran de manière instantanée.</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="window">
+            <div>
+              <span class="text-[10px] font-bold text-amber-600 dark:text-amber-450 uppercase">Forcer à Quitter</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + Option + Échap</h4>
+              <p class="text-xs text-neutral-500 mt-2">Équivalent du Ctrl+Alt+Suppr Windows, indispensable pour purger un processus gelé.</p>
+            </div>
+          </div>
+
+          <!-- Web & Text shortcuts -->
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="text">
+            <div>
+              <span class="text-[10px] font-bold text-pink-600 dark:text-pink-450 uppercase">Coller Brut</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + ⇧ + ⌥ + V</h4>
+              <p class="text-xs text-neutral-500 mt-2">Force le collage sans mise en forme en adoptant la typographie cible.</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="text">
+            <div>
+              <span class="text-[10px] font-bold text-pink-600 dark:text-pink-450 uppercase">Lecture Safari</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + ⇧ + ⌥ + R</h4>
+              <p class="text-xs text-neutral-500 mt-2">Affiche le site en mode lecteur sans distraction pour vos lectures ou recherches.</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="text">
+            <div>
+              <span class="text-[10px] font-bold text-pink-600 dark:text-pink-450 uppercase">Copie Liens Web</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + ⌥ + L</h4>
+              <p class="text-xs text-neutral-500 mt-2">Récupère d'un coup l'ensemble des adresses web de tous les onglets ouverts.</p>
+            </div>
+          </div>
+
+          <!-- Captures shortcuts -->
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="captures">
+            <div>
+              <span class="text-[10px] font-bold text-purple-600 dark:text-purple-450 uppercase">Capture Totale</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + ⇧ + 3</h4>
+              <p class="text-xs text-neutral-500 mt-2">Prend une capture d'écran de la totalité de la zone visible.</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="captures">
+            <div>
+              <span class="text-[10px] font-bold text-purple-600 dark:text-purple-450 uppercase">Capture de Zone</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌘ + ⇧ + 4</h4>
+              <p class="text-xs text-neutral-500 mt-2">Transforme le pointeur en cible pour capturer une zone ou une fenêtre précise (+ Espace).</p>
+            </div>
+          </div>
+          <div class="shortcut-card bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex justify-between items-start" data-category="captures">
+            <div>
+              <span class="text-[10px] font-bold text-purple-600 dark:text-purple-450 uppercase">Vers le Presse-Papiers</span>
+              <h4 class="font-mono text-sm font-bold text-neutral-900 dark:text-white mt-1">⌃ + ⌘ + ⇧ + 4</h4>
+              <p class="text-xs text-neutral-500 mt-2">Ajoutez la touche Contrôle (⌃) pour copier directement en mémoire sans saturer le bureau.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================= PANEL 5: THE LEAN STACK ================================= -->
+    <section id="panel-5" role="tabpanel" aria-labelledby="tab-5" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Application Selection Matrix -->
+        <div class="lg:col-span-3 bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-neutral-200 dark:border-neutral-800 gap-4 mb-6">
+            <div>
+              <h3 class="font-bold text-neutral-900 dark:text-white text-xl">La Sélection Logicielle "Lean Stack" (Zéro Bloatware)</h3>
+              <p class="text-sm text-neutral-500">Sélectionnez vos applications pour générer votre commande d'installation groupée avec Homebrew.</p>
+            </div>
+            
+            <!-- App Search -->
+            <div class="flex gap-4">
+              <input type="text" id="app-search" oninput="searchApps()" placeholder="Filtrer la table..." class="px-3 py-1.5 text-xs bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-850 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 text-neutral-900 dark:text-white">
+            </div>
+          </div>
+
+          <!-- Dynamic Apps Table with Checkboxes for Brew generator -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs" id="apps-table">
+              <thead>
+                <tr class="border-b border-neutral-200 dark:border-neutral-800 text-neutral-400 font-semibold">
+                  <th class="py-3 px-4 w-10">Sél.</th>
+                  <th class="py-3 px-4">Application (ID Brew)</th>
+                  <th class="py-3 px-4">Type</th>
+                  <th class="py-3 px-4">Prix / Dist.</th>
+                  <th class="py-3 px-4">Mission Critique</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-neutral-100 dark:divide-neutral-850 font-medium text-neutral-700 dark:text-neutral-300">
+                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition" data-app-name="rectangle" data-brew-id="rectangle" data-profiles="dev,creative,office">
+                  <td class="py-3 px-4"><input type="checkbox" checked onchange="updateBrewCommand()" class="brew-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550 border-neutral-300 dark:border-neutral-750"></td>
+                  <td class="py-3 px-4"><span class="font-bold text-neutral-900 dark:text-white">Rectangle</span> <span class="text-[10px] text-neutral-400 font-mono font-normal">(rectangle)</span></td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px]">Gestion de Fenêtres</span></td>
+                  <td class="py-3 px-4 text-emerald-600 dark:text-emerald-450">Gratuit / FOSS</td>
+                  <td class="py-3 px-4 text-neutral-500 dark:text-neutral-400">Division de l'écran par raccourcis au pixel près (tiers et quarts).</td>
+                </tr>
+                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition" data-app-name="raycast" data-brew-id="raycast" data-profiles="dev,creative">
+                  <td class="py-3 px-4"><input type="checkbox" checked onchange="updateBrewCommand()" class="brew-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550 border-neutral-300 dark:border-neutral-750"></td>
+                  <td class="py-3 px-4"><span class="font-bold text-neutral-900 dark:text-white">Raycast</span> <span class="text-[10px] text-neutral-400 font-mono font-normal">(raycast)</span></td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px]">Spotlight Pro</span></td>
+                  <td class="py-3 px-4 text-neutral-600 dark:text-neutral-450">Gratuit (base)</td>
+                  <td class="py-3 px-4 text-neutral-500 dark:text-neutral-400">Remplace Spotlight, gère vos snippets de texte, presse-papiers, scripts d'un coup.</td>
+                </tr>
+                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition" data-app-name="alttab" data-brew-id="alt-tab" data-profiles="dev,office">
+                  <td class="py-3 px-4"><input type="checkbox" checked onchange="updateBrewCommand()" class="brew-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550 border-neutral-300 dark:border-neutral-750"></td>
+                  <td class="py-3 px-4"><span class="font-bold text-neutral-900 dark:text-white">AltTab</span> <span class="text-[10px] text-neutral-400 font-mono font-normal">(alt-tab)</span></td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px]">Ergonomie</span></td>
+                  <td class="py-3 px-4 text-emerald-600 dark:text-emerald-450">Gratuit / FOSS</td>
+                  <td class="py-3 px-4 text-neutral-500 dark:text-neutral-400">Rétablit la permutation de fenêtres individuelles type Windows avec miniatures.</td>
+                </tr>
+                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition" data-app-name="appcleaner" data-brew-id="appcleaner" data-profiles="dev,creative,office">
+                  <td class="py-3 px-4"><input type="checkbox" checked onchange="updateBrewCommand()" class="brew-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550 border-neutral-300 dark:border-neutral-750"></td>
+                  <td class="py-3 px-4"><span class="font-bold text-neutral-900 dark:text-white">AppCleaner</span> <span class="text-[10px] text-neutral-400 font-mono font-normal">(appcleaner)</span></td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px]">Maintenance</span></td>
+                  <td class="py-3 px-4 text-emerald-600 dark:text-emerald-450">Gratuit</td>
+                  <td class="py-3 px-4 text-neutral-500 dark:text-neutral-400">Chasse les fichiers résiduels (~/Library) ignorés lors de la mise à la poubelle.</td>
+                </tr>
+                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition" data-app-name="shottr" data-brew-id="shottr" data-profiles="creative">
+                  <td class="py-3 px-4"><input type="checkbox" onchange="updateBrewCommand()" class="brew-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550 border-neutral-300 dark:border-neutral-750"></td>
+                  <td class="py-3 px-4"><span class="font-bold text-neutral-900 dark:text-white">Shottr</span> <span class="text-[10px] text-neutral-400 font-mono font-normal">(shottr)</span></td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px]">Capture</span></td>
+                  <td class="py-3 px-4 text-neutral-600 dark:text-neutral-450">Gratuit (Freemium)</td>
+                  <td class="py-3 px-4 text-neutral-500 dark:text-neutral-400">Outil de capture d'écran ultra-rapide avec scroll-capture, floutage d'infos privées et OCR.</td>
+                </tr>
+                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition" data-app-name="bitwarden" data-brew-id="bitwarden" data-profiles="dev,office">
+                  <td class="py-3 px-4"><input type="checkbox" onchange="updateBrewCommand()" class="brew-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550 border-neutral-300 dark:border-neutral-750"></td>
+                  <td class="py-3 px-4"><span class="font-bold text-neutral-900 dark:text-white">Bitwarden</span> <span class="text-[10px] text-neutral-400 font-mono font-normal">(bitwarden)</span></td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px]">Sécurité</span></td>
+                  <td class="py-3 px-4 text-emerald-600 dark:text-emerald-450">Gratuit / FOSS</td>
+                  <td class="py-3 px-4 text-neutral-500 dark:text-neutral-400">Gestionnaire de mots de passe de référence, cryptographie zero-knowledge.</td>
+                </tr>
+                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition" data-app-name="stats" data-brew-id="stats" data-profiles="dev">
+                  <td class="py-3 px-4"><input type="checkbox" onchange="updateBrewCommand()" class="brew-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550 border-neutral-300 dark:border-neutral-750"></td>
+                  <td class="py-3 px-4"><span class="font-bold text-neutral-900 dark:text-white">Stats</span> <span class="text-[10px] text-neutral-400 font-mono font-normal">(stats)</span></td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px]">Diagnostic</span></td>
+                  <td class="py-3 px-4 text-emerald-600 dark:text-emerald-450">Gratuit / FOSS</td>
+                  <td class="py-3 px-4 text-neutral-500 dark:text-neutral-400">Affichage de l'occupation CPU, GPU, RAM, température de la batterie dans la barre de menus.</td>
+                </tr>
+                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition" data-app-name="obsidian" data-brew-id="obsidian" data-profiles="creative,dev">
+                  <td class="py-3 px-4"><input type="checkbox" onchange="updateBrewCommand()" class="brew-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-550 border-neutral-300 dark:border-neutral-750"></td>
+                  <td class="py-3 px-4"><span class="font-bold text-neutral-900 dark:text-white">Obsidian</span> <span class="text-[10px] text-neutral-400 font-mono font-normal">(obsidian)</span></td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[10px]">Notes</span></td>
+                  <td class="py-3 px-4 text-emerald-600 dark:text-emerald-450">Gratuit (Perso)</td>
+                  <td class="py-3 px-4 text-neutral-500 dark:text-neutral-400">Éditeur Markdown local ultra-puissant pour construire un second cerveau interconnecté.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Interactive Brew Generator Terminal Box -->
+          <div class="mt-6 bg-neutral-950 text-neutral-200 p-5 rounded-2xl border border-neutral-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="space-y-1 w-full max-w-3xl">
+              <span class="inline-flex items-center px-2 py-0.5 rounded bg-indigo-900/45 border border-indigo-750 text-indigo-300 text-[10px] font-bold">Terminal Installer Auto</span>
+              <p class="text-xs font-semibold text-white">Installez la sélection ci-dessus en une ligne de commande</p>
+              <div class="bg-neutral-900 border border-neutral-800 p-3 rounded-lg font-mono text-[11px] text-emerald-450 truncate mt-2 select-all" id="brew-command-display">
+                brew install --cask rectangle raycast alt-tab appcleaner
+              </div>
+            </div>
+            <div class="flex-shrink-0 self-end md:self-center">
+              <button onclick="copyBrewCommand()" id="copy-brew-btn" class="bg-white hover:bg-neutral-100 text-neutral-950 text-xs font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition active:scale-95">
+                <span>Copier l'installateur</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Underestimated Native Tools -->
+        <div class="lg:col-span-3 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-4">Les Armes Secrètes Natives (Souvent Sous-estimées)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white dark:bg-neutral-950 p-4 rounded-xl border border-neutral-200 dark:border-neutral-850">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">Aperçu (Preview)</span>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">
+                N'achetez jamais d'éditeur PDF tiers. Aperçu gère nativement la fusion de documents, le recadrage d'images, la compression et propose un outil de signature numérique sécurisé.
+              </p>
+            </div>
+            <div class="bg-white dark:bg-neutral-950 p-4 rounded-xl border border-neutral-200 dark:border-neutral-850">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">Freeform</span>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">
+                Le tableau blanc infini d'Apple est idéal pour structurer vos projets complexes, intégrer des mind maps dynamiques et organiser des Moodboards sans aucune friction.
+              </p>
+            </div>
+            <div class="bg-white dark:bg-neutral-950 p-4 rounded-xl border border-neutral-200 dark:border-neutral-850">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">Capture d'Écran Avancée</span>
+              <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">
+                Utilisez <strong class="text-neutral-800 dark:text-white">⌘ + ⇧ + 5</strong> pour ouvrir le panneau d'enregistrement de l'écran avec sélection de source audio, option d'affichage des clics et minuteur de déclenchement.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================= PANEL 6: THERMIQUE & ÉNERGIE ================================= -->
+    <section id="panel-6" role="tabpanel" aria-labelledby="tab-6" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Thermal science -->
+        <div class="lg:col-span-2 bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-2">Comprendre la Science Thermique des puces M1-M5</h3>
+          <p class="text-sm text-neutral-500 mb-6">Pourquoi votre MacBook Air n'a pas de ventilateur, et comment en tirer parti.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+              <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800">
+                <span class="text-xs font-bold text-neutral-900 dark:text-white">Le Mythe du Throttling</span>
+                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                  Votre Mac Air utilise son châssis en aluminium comme un dissipateur passif. En charge soutenue, le SoC réduit sa fréquence pour se protéger (throttling), entraînant une baisse de vitesse allant jusqu'à 30%.
+                </p>
+              </div>
+            </div>
+            
+            <div class="space-y-4">
+              <div class="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-xl">
+                <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">Alerte Mode Clamshell</span>
+                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                  Pendant des charges lourdes, <strong class="text-neutral-900 dark:text-white font-bold">gardez impérativement l'écran ouvert</strong>. Une partie de l'air chaud s'échappe vers le haut du clavier ; fermer le capot emprisonne cette chaleur.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Battery Calibration Checklist -->
+        <div class="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">Pérennité du Matériel</div>
+            <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-3">Checklist Préservation Batterie</h3>
+            <div class="space-y-3">
+              <label class="flex items-start gap-2.5 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                <input type="checkbox" data-chk="bat-80-limit" class="w-4 h-4 text-indigo-600 rounded border-neutral-300 dark:border-neutral-750 mt-0.5">
+                <span>Brider la charge max à <strong class="text-neutral-900 dark:text-white">80%</strong> via l'outil <strong class="text-indigo-600 dark:text-indigo-405">AlDente</strong> (divise l'usure chimique par deux).</span>
+              </label>
+              <label class="flex items-start gap-2.5 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                <input type="checkbox" data-chk="bat-brightness" class="w-4 h-4 text-indigo-600 rounded border-neutral-300 dark:border-neutral-750 mt-0.5">
+                <span>Luminosité à <strong class="text-neutral-900 dark:text-white">70%</strong> (meilleur ratio confort/consommation).</span>
+              </label>
+              <label class="flex items-start gap-2.5 text-xs text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                <input type="checkbox" data-chk="bat-ssd-wear" class="w-4 h-4 text-indigo-600 rounded border-neutral-300 dark:border-neutral-750 mt-0.5">
+                <span>Maintenir <strong class="text-neutral-900 dark:text-white">15-20% de stockage libre</strong> pour préserver l'intégrité de la mémoire d'échange (Swap).</span>
+              </label>
+            </div>
+          </div>
+          <div class="text-xs text-neutral-400 dark:text-neutral-500 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+            Un MacBook traité selon ce protocole garde sa santé batterie maximale beaucoup plus longtemps.
+          </div>
+        </div>
+
+        <!-- Diagnostic RAM Calculator Widget -->
+        <div class="lg:col-span-3 bg-neutral-950 text-white rounded-2xl p-6 border border-neutral-800 shadow-sm">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <span class="inline-flex items-center px-2 py-0.5 rounded bg-indigo-900/60 border border-indigo-750 text-indigo-200 text-xs font-semibold mb-2">Simulateur d'Allocation de Mémoire</span>
+              <h4 class="text-lg font-bold">Diagnostiquez virtuellement votre usage de RAM</h4>
+              <p class="text-xs text-neutral-400 mt-1 leading-relaxed max-w-xl">
+                Ajoutez virtuellement vos charges de travail et observez la pression de la RAM simulée pour optimiser le Swap de votre SSD.
+              </p>
+            </div>
+            
+            <div class="w-full md:w-auto bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-3 min-w-[280px]">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-mono text-neutral-400">Total RAM Machine :</span>
+                <select id="diag-ram-total" onchange="calcRamPressure()" class="bg-neutral-950 border border-neutral-800 text-xs text-white p-1 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                  <option value="8">8 Go (MacBook de base)</option>
+                  <option value="16" selected>16 Go (MacBook Équilibre)</option>
+                  <option value="24">24 Go (MacBook Confort)</option>
+                  <option value="36">36 Go+ (MacBook Pro)</option>
+                </select>
+              </div>
+              <div class="space-y-1.5 border-t border-neutral-850 pt-3">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="diag-app-intelligence" onchange="calcRamPressure()" checked class="w-3.5 h-3.5 text-indigo-600 bg-neutral-950 border-neutral-800 rounded">
+                  <label for="diag-app-intelligence" class="text-[11px] text-neutral-300 cursor-pointer">Apple Intelligence (Actif 2026)</label>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="diag-app-browser" onchange="calcRamPressure()" class="w-3.5 h-3.5 text-indigo-600 bg-neutral-950 border-neutral-800 rounded">
+                  <label for="diag-app-browser" class="text-[11px] text-neutral-300 cursor-pointer">Navigateur lourd (> 15 onglets)</label>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="diag-app-pro" onchange="calcRamPressure()" class="w-3.5 h-3.5 text-indigo-600 bg-neutral-950 border-neutral-800 rounded">
+                  <label for="diag-app-pro" class="text-[11px] text-neutral-300 cursor-pointer">DaVinci / Docker / Suite Adobe</label>
+                </div>
+              </div>
+              <div class="border-t border-neutral-850 pt-3 flex items-center justify-between">
+                <span class="text-xs text-neutral-400 font-semibold">Pression RAM estimée :</span>
+                <span id="diag-ram-result" class="text-xs font-mono font-bold text-emerald-450 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/50">Faible (~3.5 Go requis)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================= PANEL 7: SECURITÉ & HYGIÈNE ================================= -->
+    <section id="panel-7" role="tabpanel" aria-labelledby="tab-7" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Sentinel Stack / Advanced checklist -->
+        <div class="lg:col-span-2 bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-1">Gouvernance & Sécurité macOS en 2026</h3>
+          <p class="text-sm text-neutral-500 mb-6">Le mythe du "Mac sans virus" est obsolète. Les attaques par Infostealers ciblent directement macOS.</p>
+          
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-850 transition">
+              <input type="checkbox" data-chk="sec-standard-user" class="w-5 h-5 rounded border-neutral-300 dark:border-neutral-750 text-indigo-600 focus:ring-indigo-500 mt-0.5">
+              <div class="text-xs">
+                <span class="font-bold text-neutral-900 dark:text-white block mb-0.5">Utiliser un compte quotidien non-administrateur</span>
+                <p class="text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                  Créez un compte "Standard" pour l'usage quotidien. Si un script malveillant tente de s'exécuter, le système bloquera l'accès et réclamera vos identifiants administrateur, vous alertant.
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-3 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-850 transition">
+              <input type="checkbox" data-chk="sec-filevault" class="w-5 h-5 rounded border-neutral-300 dark:border-neutral-750 text-indigo-600 focus:ring-indigo-500 mt-0.5">
+              <div class="text-xs">
+                <span class="font-bold text-neutral-900 dark:text-white block mb-0.5">Activer le chiffrement complet FileVault</span>
+                <p class="text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                  Rendez-vous dans Réglages > Confidentialité et Sécurité. En cas de vol physique de votre machine, FileVault garantit que vos documents confidentiels resteront inviolables.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3 p-3 bg-neutral-50 dark:bg-neutral-900 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-850 transition">
+              <input type="checkbox" data-chk="sec-stealth-mode" class="w-5 h-5 rounded border-neutral-300 dark:border-neutral-750 text-indigo-600 focus:ring-indigo-500 mt-0.5">
+              <div class="text-xs">
+                <span class="font-bold text-neutral-900 dark:text-white block mb-0.5">Activer le Pare-feu de macOS & le "Mode Furtif" (Stealth Mode)</span>
+                <p class="text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                  Le pare-feu natif d'Apple est désactivé par défaut. Activez-le dans vos réglages Réseau, et cochez l'option Mode furtif. Cela rend votre ordinateur invisible aux scans de port sur les réseaux Wi-Fi publics.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- External security tools -->
+        <div class="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">Le Bastion Logiciel</span>
+            <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-3">Outils Sentinelles Objective-See</h3>
+            <p class="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed mb-4">
+              En complément de Gatekeeper d'Apple, utilisez ces utilitaires gratuits et open source de confiance pour intercepter toute activité suspecte :
+            </p>
+            <div class="space-y-3">
+              <div class="p-3 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-850 rounded-xl">
+                <span class="font-bold text-xs text-neutral-900 dark:text-white block">LuLu (Firewall Sortant)</span>
+                <p class="text-[11px] text-neutral-500 mt-0.5">Bloque et vous alerte de toute connexion réseau sortante non autorisée initiée par une application ou un script.</p>
+              </div>
+              <div class="p-3 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-850 rounded-xl">
+                <span class="font-bold text-xs text-neutral-900 dark:text-white block">BlockBlock</span>
+                <p class="text-[11px] text-neutral-500 mt-0.5">Surveille et empêche la création persistante d'agents d'arrière-plan à votre insu.</p>
+              </div>
+            </div>
+          </div>
+          <div class="text-[11px] text-neutral-400 dark:text-neutral-500 mt-4">
+            Bannissez définitivement les versions crackées de logiciels, vecteurs principaux de malware.
+          </div>
+        </div>
+
+        <!-- Terminal Command Snippets -->
+        <div class="lg:col-span-3 bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6">
+          <h3 class="font-bold text-neutral-900 dark:text-white text-lg mb-1">Commandes d'Hygiène & d'Optimisation Avancées</h3>
+          <p class="text-sm text-neutral-500 mb-6">Exécutez ces scripts d'un clic dans votre application Terminal pour maximiser la réactivité système.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-850 flex flex-col justify-between">
+              <div>
+                <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase">1. Fluidifier l'interface graphique (Zéro Lag)</span>
+                <p class="text-xs text-neutral-500 mt-1 mb-4 leading-relaxed">Neutralise l'effet élastique d'ouverture des fenêtres pour une sensation visuelle d'instantanéité absolue.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <code class="text-[11px] font-mono bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-850 rounded px-2.5 py-2 flex-1 truncate select-all">defaults write com.apple.dock launchanim -bool false; killall Dock</code>
+                <button onclick="copyToClipboard('defaults write com.apple.dock launchanim -bool false; killall Dock', 'cmd-dock-btn')" id="cmd-dock-btn" class="bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 text-white text-xs font-semibold py-2 px-3 rounded-lg flex-shrink-0 transition flex items-center gap-1">
+                  <span>Copier</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-850 flex flex-col justify-between">
+              <div>
+                <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase">2. Rediriger l'emplacement des captures</span>
+                <p class="text-xs text-neutral-500 mt-1 mb-4 leading-relaxed">Empêche de saturer l'affichage de votre bureau en stockant vos captures dans votre dossier Téléchargements.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <code class="text-[11px] font-mono bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-850 rounded px-2.5 py-2 flex-1 truncate select-all">defaults write com.apple.screencapture location ~/Downloads; killall SystemUIServer</code>
+                <button onclick="copyToClipboard('defaults write com.apple.screencapture location ~/Downloads; killall SystemUIServer', 'cmd-screen-btn')" id="cmd-screen-btn" class="bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 text-white text-xs font-semibold py-2 px-3 rounded-lg flex-shrink-0 transition flex items-center gap-1">
+                  <span>Copier</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="p-4 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-850 flex flex-col justify-between">
+              <div>
+                <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase">3. Activer l'accès par clavier complet</span>
+                <p class="text-xs text-neutral-500 mt-1 mb-4 leading-relaxed">Permet de naviguer dans les boîtes de dialogue et boutons avec la touche de tabulation (Tab).</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <code class="text-[11px] font-mono bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-850 rounded px-2.5 py-2 flex-1 truncate select-all">defaults write NSGlobalDomain AppleKeyboardUIMode -int 3</code>
+                <button onclick="copyToClipboard('defaults write NSGlobalDomain AppleKeyboardUIMode -int 3', 'cmd-kb-btn')" id="cmd-kb-btn" class="bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 text-white text-xs font-semibold py-2 px-3 rounded-lg flex-shrink-0 transition flex items-center gap-1">
+                  <span>Copier</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Persistent Sticky Footer -->
+  <footer class="bg-neutral-50 dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-800 py-4 text-center text-xs text-neutral-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>© 2026 — Plateforme d'Entraînement Académique macOS. Conçu pour puces Apple Silicon.</p>
+      <div class="flex gap-4">
+        <span class="font-semibold text-neutral-700 dark:text-neutral-300">Guide de Maîtrise Technique</span>
+        <span>•</span>
+        <button onclick="resetAllChecklists()" class="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold focus:outline-none">Réinitialiser la progression</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Single-file Application logic -->
+  <script>
+    // Global State
+    let currentProfile = 'dev'; // default profile
+    let dojoStreak = 0;
+    let activeChallengeIndex = 0;
+    let selectedPaletteIndex = 0;
+
+    const dojoChallenges = [
+      {
+        text: "Prendre une capture d'écran d'une zone précise",
+        keys: { cmd: true, shift: true, alt: false, ctrl: false, char: '4' },
+        display: "⌘ + ⇧ + 4"
+      },
+      {
+        text: "Forcer la fermeture d'une application gelée",
+        keys: { cmd: true, shift: false, alt: true, ctrl: false, char: 'escape' },
+        display: "⌘ + ⌥ + Échap"
+      },
+      {
+        text: "Ouvrir instantanément les Préférences de l'application",
+        keys: { cmd: true, shift: false, alt: false, ctrl: false, char: ',' },
+        display: "⌘ + ,"
+      },
+      {
+        text: "Coller du texte en forçant le format brut sans mise en forme",
+        keys: { cmd: true, shift: true, alt: true, ctrl: false, char: 'v' },
+        display: "⌘ + ⇧ + ⌥ + V"
+      },
+      {
+        text: "Copier la capture d'écran d'une zone directement dans le presse-papiers",
+        keys: { cmd: true, shift: true, alt: false, ctrl: true, char: '4' },
+        display: "⌃ + ⌘ + ⇧ + 4"
+      }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      initTabs();
+      initChecklists();
+      initDojo();
+      initPaletteKeys();
+      updateProgressBar();
+      selectProfile('dev'); // apply default profile selection UI
+      calcRamPressure();
+    });
+
+    // Theme Management (Light / Dark)
+    function initTheme() {
+      const themeToggleBtn = document.getElementById('theme-toggle');
+      const lightIcon = document.getElementById('theme-toggle-light-icon');
+      const darkIcon = document.getElementById('theme-toggle-dark-icon');
+      
+      const isDark = localStorage.getItem('color-theme') === 'dark' || 
+                    (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        lightIcon.classList.remove('hidden');
+      } else {
+        document.documentElement.classList.remove('dark');
+        darkIcon.classList.remove('hidden');
+      }
+
+      themeToggleBtn.addEventListener('click', () => {
+        toggleDarkMode();
+      });
+    }
+
+    function toggleDarkMode() {
+      const lightIcon = document.getElementById('theme-toggle-light-icon');
+      const darkIcon = document.getElementById('theme-toggle-dark-icon');
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('color-theme', 'light');
+        lightIcon.classList.add('hidden');
+        darkIcon.classList.remove('hidden');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('color-theme', 'dark');
+        darkIcon.classList.add('hidden');
+        lightIcon.classList.remove('hidden');
+      }
+    }
+
+    // Accessibility compliant Tab Navigation Logic
+    function initTabs() {
+      const tabs = document.querySelectorAll('[role="tab"]');
+      const panels = document.querySelectorAll('[role="tabpanel"]');
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => {
+          activateTab(tab, panels);
+        });
+
+        tab.addEventListener('keydown', (e) => {
+          let targetIndex = null;
+          if (e.key === 'ArrowRight') {
+            targetIndex = (index + 1) % tabs.length;
+          } else if (e.key === 'ArrowLeft') {
+            targetIndex = (index - 1 + tabs.length) % tabs.length;
+          }
+
+          if (targetIndex !== null) {
+            tabs[targetIndex].focus();
+            activateTab(tabs[targetIndex], panels);
+          }
+        });
+      });
+    }
+
+    function activateTab(activeTab, panels) {
+      const tabs = document.querySelectorAll('[role="tab"]');
+      tabs.forEach(tab => {
+        tab.setAttribute('aria-selected', 'false');
+        tab.setAttribute('tabindex', '-1');
+        tab.className = "flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all duration-150 focus:outline-none";
+      });
+
+      activeTab.setAttribute('aria-selected', 'true');
+      activeTab.setAttribute('tabindex', '0');
+      activeTab.className = "flex-shrink-0 px-4 py-3 rounded-lg text-sm font-semibold border transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400";
+
+      const targetId = activeTab.getAttribute('aria-controls');
+      panels.forEach(panel => {
+        if (panel.id === targetId) {
+          panel.classList.remove('hidden');
+          panel.classList.add('block');
+        } else {
+          panel.classList.remove('block');
+          panel.classList.add('hidden');
+        }
+      });
+    }
+
+    function goToTab(tabId) {
+      const tabElement = document.getElementById(tabId);
+      const panels = document.querySelectorAll('[role="tabpanel"]');
+      if (tabElement) {
+        tabElement.focus();
+        activateTab(tabElement, panels);
+        tabElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+
+    // Interactive Checklist & Storage Persistence
+    function initChecklists() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(.brew-checkbox):not([id^="diag-"])');
+      checkboxes.forEach(checkbox => {
+        const key = checkbox.getAttribute('data-chk');
+        if (key && localStorage.getItem(key) === 'true') {
+          checkbox.checked = true;
+        }
+
+        checkbox.addEventListener('change', () => {
+          if (key) {
+            localStorage.setItem(key, checkbox.checked);
+          }
+          updateProgressBar();
+        });
+      });
+    }
+
+    function updateProgressBar() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(.brew-checkbox):not([id^="diag-"])');
+      const checked = document.querySelectorAll('input[type="checkbox"]:checked:not(.brew-checkbox):not([id^="diag-"])');
+      
+      // Calculate global
+      const progressPercent = checkboxes.length ? Math.round((checked.length / checkboxes.length) * 100) : 0;
+      
+      const bar = document.getElementById('global-progress-bar');
+      const text = document.getElementById('global-progress-text');
+      const container = document.getElementById('progress-bar-container');
+      
+      if (bar && text) {
+        bar.style.width = `${progressPercent}%`;
+        text.innerText = `${progressPercent}%`;
+        if (container) {
+          container.setAttribute('aria-valuenow', progressPercent);
+        }
+      }
+
+      // Calculate Sub-Modules progress for Tab 0 Cockpit
+      calculateSubModuleProgress('setup-trackpad-', 'm1-progress-bar', 'm1-progress-text');
+      calculateSubModuleProgress('finder-', 'm2-progress-bar', 'm2-progress-text');
+      calculateSubModuleProgress('hot-corners-', 'm3-progress-bar', 'm3-progress-text');
+      calculateSubModuleProgress('sec-', 'm7-progress-bar', 'm7-progress-text');
+    }
+
+    function calculateSubModuleProgress(prefix, barId, textId) {
+      const checkboxes = document.querySelectorAll(`input[type="checkbox"][data-chk^="${prefix}"]`);
+      const checked = document.querySelectorAll(`input[type="checkbox"]:checked[data-chk^="${prefix}"]`);
+      const percent = checkboxes.length ? Math.round((checked.length / checkboxes.length) * 100) : 0;
+      
+      const bar = document.getElementById(barId);
+      const text = document.getElementById(textId);
+      if (bar && text) {
+        bar.style.width = `${percent}%`;
+        text.innerText = `${percent}%`;
+      }
+    }
+
+    function resetAllChecklists() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(.brew-checkbox):not([id^="diag-"])');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        const key = checkbox.getAttribute('data-chk');
+        if (key) {
+          localStorage.removeItem(key);
+        }
+      });
+      updateProgressBar();
+      showToast("Toutes les progressions ont été réinitialisées.");
+    }
+
+    // Persona/Profile Switcher Logic
+    function selectProfile(profile) {
+      currentProfile = profile;
+      
+      // Update UI button styles
+      const buttons = document.querySelectorAll('.profile-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500/20', 'bg-indigo-50/50', 'dark:bg-indigo-950/20');
+        btn.classList.add('bg-neutral-50', 'dark:bg-neutral-950', 'border-neutral-200', 'dark:border-neutral-800');
+        
+        const badge = btn.querySelector('span:last-child');
+        if (badge) {
+          badge.innerText = "Activer";
+          badge.className = "text-[10px] bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded text-neutral-600 dark:text-neutral-450";
+        }
+      });
+
+      const activeBtn = document.getElementById(`prof-btn-${profile}`);
+      if (activeBtn) {
+        activeBtn.classList.add('border-indigo-500', 'ring-2', 'ring-indigo-500/20', 'bg-indigo-50/50', 'dark:bg-indigo-950/20');
+        activeBtn.classList.remove('bg-neutral-50', 'dark:bg-neutral-950', 'border-neutral-200', 'dark:border-neutral-800');
+        
+        const badge = activeBtn.querySelector('span:last-child');
+        if (badge) {
+          badge.innerText = "Actif";
+          badge.className = "text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded font-bold";
+        }
+      }
+
+      // Automatically check correct boxes in Tab 5 Cask list
+      const rows = document.querySelectorAll('#apps-table tbody tr');
+      rows.forEach(row => {
+        const profilesString = row.getAttribute('data-profiles') || '';
+        const chk = row.querySelector('.brew-checkbox');
+        if (chk) {
+          chk.checked = profilesString.split(',').includes(profile);
+        }
+      });
+
+      updateBrewCommand();
+    }
+
+    // Dynamic Brew Command Generator
+    function updateBrewCommand() {
+      const checkBoxes = document.querySelectorAll('.brew-checkbox');
+      const brewIds = [];
+      
+      checkBoxes.forEach(chk => {
+        if (chk.checked) {
+          const tr = chk.closest('tr');
+          if (tr) {
+            const brewId = tr.getAttribute('data-brew-id');
+            if (brewId) brewIds.push(brewId);
+          }
+        }
+      });
+
+      const display = document.getElementById('brew-command-display');
+      if (display) {
+        if (brewIds.length > 0) {
+          display.innerText = `brew install --cask ${brewIds.join(' ')}`;
+        } else {
+          display.innerText = `# Sélectionnez des applications dans la liste pour générer la commande.`;
+        }
+      }
+    }
+
+    function copyBrewCommand() {
+      const display = document.getElementById('brew-command-display');
+      if (display) {
+        copyToClipboard(display.innerText, 'copy-brew-btn');
+      }
+    }
+
+    // RAM Simulated Diagnostics Panel
+    function calcRamPressure() {
+      const ramTotal = parseInt(document.getElementById('diag-ram-total').value);
+      const withAI = document.getElementById('diag-app-intelligence').checked;
+      const withBrowser = document.getElementById('diag-app-browser').checked;
+      const withPro = document.getElementById('diag-app-pro').checked;
+
+      let requiredRam = 2.0; // Base macOS
+      if (withAI) requiredRam += 2.5;
+      if (withBrowser) requiredRam += 3.0;
+      if (withPro) requiredRam += 8.0;
+
+      const resultElement = document.getElementById('diag-ram-result');
+      if (!resultElement) return;
+
+      const ratio = requiredRam / ramTotal;
+      if (ratio < 0.5) {
+        resultElement.className = "text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-900/50";
+        resultElement.innerText = `Légère (~${requiredRam.toFixed(1)} Go requis)`;
+      } else if (ratio < 0.8) {
+        resultElement.className = "text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-900/50";
+        resultElement.innerText = `Modérée (~${requiredRam.toFixed(1)} Go requis)`;
+      } else {
+        resultElement.className = "text-xs font-mono font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/40 px-2 py-0.5 rounded border border-red-300 dark:border-red-900/50 animate-pulse";
+        resultElement.innerText = `Saturée (~${requiredRam.toFixed(1)} Go / Swap SSD requis)`;
+      }
+    }
+
+    // Dojo Du Clavier Logic
+    function initDojo() {
+      const arena = document.getElementById('dojo-arena');
+      const focusIndicator = document.getElementById('dojo-focus-indicator');
+      
+      arena.addEventListener('focus', () => {
+        focusIndicator.innerText = "DOJO ACTIF - ÉCOUTE DES TOUCHES";
+        focusIndicator.className = "absolute top-2 right-2 flex items-center gap-1.5 text-[9px] font-bold text-emerald-500 bg-emerald-950/40 border border-emerald-900 px-2 py-0.5 rounded-md";
+      });
+
+      arena.addEventListener('blur', () => {
+        focusIndicator.innerText = "CLIQUEZ POUR COMMENCER";
+        focusIndicator.className = "absolute top-2 right-2 flex items-center gap-1.5 text-[9px] font-bold text-amber-500 bg-amber-950/40 border border-amber-900 px-2 py-0.5 rounded-md";
+        resetDojoVisualKeys();
+      });
+
+      arena.addEventListener('keydown', (e) => {
+        // Prevent key events from bubbling and triggering defaults (like Cmd+S or Safari search) if target is the dojo
+        e.preventDefault();
+
+        const cmdActive = e.metaKey;
+        const altActive = e.originAltKey || e.altKey;
+        const ctrlActive = e.ctrlKey;
+        const shiftActive = e.shiftKey;
+        
+        let pressedChar = e.key.toLowerCase();
+        if (e.key === ' ') pressedChar = 'space';
+
+        // Update visualizer keys
+        updateKeyUI('key-cmd', cmdActive);
+        updateKeyUI('key-alt', altActive);
+        updateKeyUI('key-ctrl', ctrlActive);
+        updateKeyUI('key-shift', shiftActive);
+        
+        const charBox = document.getElementById('key-char');
+        if (pressedChar && pressedChar !== 'meta' && pressedChar !== 'alt' && pressedChar !== 'control' && pressedChar !== 'shift') {
+          charBox.innerText = pressedChar.toUpperCase();
+          charBox.className = "px-3 py-1.5 rounded-lg bg-indigo-600 border border-indigo-500 text-xs font-bold text-white transition-all font-mono";
+        }
+
+        // Display currently pressed keys
+        let pressedStringArray = [];
+        if (ctrlActive) pressedStringArray.push('⌃ Ctrl');
+        if (altActive) pressedStringArray.push('⌥ Option');
+        if (shiftActive) pressedStringArray.push('⇧ Shift');
+        if (cmdActive) pressedStringArray.push('⌘ Cmd');
+        if (pressedChar && pressedChar !== 'meta' && pressedChar !== 'alt' && pressedChar !== 'control' && pressedChar !== 'shift') {
+          pressedStringArray.push(pressedChar.toUpperCase());
+        }
+        document.getElementById('dojo-pressed-keys').innerText = pressedStringArray.join(' + ') || 'Aucune';
+
+        // Verify challenge logic
+        const currentChallenge = dojoChallenges[activeChallengeIndex];
+        const challengeKeys = currentChallenge.keys;
+        
+        if (
+          cmdActive === challengeKeys.cmd &&
+          altActive === challengeKeys.alt &&
+          ctrlActive === challengeKeys.ctrl &&
+          shiftActive === challengeKeys.shift &&
+          pressedChar === challengeKeys.char
+        ) {
+          // Success!
+          dojoStreak++;
+          document.getElementById('dojo-streak').innerText = dojoStreak;
+          showToast("Défi relevé ! Mémoire musculaire forgée.");
+          
+          // Flash green animation
+          arena.classList.add('ring-4', 'ring-emerald-500', 'border-emerald-500');
+          setTimeout(() => {
+            arena.classList.remove('ring-4', 'ring-emerald-500', 'border-emerald-500');
+            nextDojoChallenge();
+          }, 800);
+        }
+      });
+    }
+
+    function updateKeyUI(id, isActive) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (isActive) {
+        el.className = "px-2.5 py-1.5 rounded-lg bg-indigo-600 border border-indigo-500 text-xs font-bold text-white transition-all font-mono";
+      } else {
+        el.className = "px-2.5 py-1.5 rounded-lg bg-neutral-800 border border-neutral-750 text-xs font-bold text-neutral-500 transition-all font-mono";
+      }
+    }
+
+    function resetDojoVisualKeys() {
+      updateKeyUI('key-cmd', false);
+      updateKeyUI('key-alt', false);
+      updateKeyUI('key-ctrl', false);
+      updateKeyUI('key-shift', false);
+      const charBox = document.getElementById('key-char');
+      charBox.innerText = "-";
+      charBox.className = "px-3 py-1.5 rounded-lg bg-neutral-800 border border-neutral-750 text-xs font-bold text-neutral-500 transition-all font-mono";
+      document.getElementById('dojo-pressed-keys').innerText = "Aucune";
+    }
+
+    function nextDojoChallenge() {
+      activeChallengeIndex = (activeChallengeIndex + 1) % dojoChallenges.length;
+      const nextChallenge = dojoChallenges[activeChallengeIndex];
+      document.getElementById('dojo-challenge-text').innerText = nextChallenge.text;
+      document.getElementById('dojo-target-combination').innerText = nextChallenge.display;
+      resetDojoVisualKeys();
+    }
+
+    // Command Palette Logic (Raycast overlay)
+    function openCommandPalette() {
+      const palette = document.getElementById('command-palette');
+      const content = document.getElementById('palette-content');
+      const input = document.getElementById('palette-input');
+      
+      palette.classList.remove('hidden');
+      setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+        input.focus();
+        input.value = "";
+        filterPalette();
+      }, 50);
+    }
+
+    function closeCommandPalette() {
+      const palette = document.getElementById('command-palette');
+      const content = document.getElementById('palette-content');
+      
+      content.classList.add('scale-95', 'opacity-0');
+      content.classList.remove('scale-100', 'opacity-100');
+      setTimeout(() => {
+        palette.classList.add('hidden');
+      }, 150);
+    }
+
+    function initPaletteKeys() {
+      const input = document.getElementById('palette-input');
+      
+      // Globally trigger palette using Cmd+K or Ctrl+K
+      window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          openCommandPalette();
+        }
+        if (e.key === 'Escape') {
+          closeCommandPalette();
+        }
+      });
+
+      // Navigate inside palette list using keys
+      input.addEventListener('keydown', (e) => {
+        const visibleItems = Array.from(document.querySelectorAll('.palette-item:not(.hidden)'));
+        if (visibleItems.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedPaletteIndex = (selectedPaletteIndex + 1) % visibleItems.length;
+          highlightPaletteItem(visibleItems);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedPaletteIndex = (selectedPaletteIndex - 1 + visibleItems.length) % visibleItems.length;
+          highlightPaletteItem(visibleItems);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (visibleItems[selectedPaletteIndex]) {
+            visibleItems[selectedPaletteIndex].click();
+          }
+        }
+      });
+    }
+
+    function filterPalette() {
+      const val = document.getElementById('palette-input').value.toLowerCase();
+      const items = document.querySelectorAll('.palette-item');
+      let visibleCount = 0;
+
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(val)) {
+          item.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      selectedPaletteIndex = 0;
+      const visibleItems = Array.from(document.querySelectorAll('.palette-item:not(.hidden)'));
+      highlightPaletteItem(visibleItems);
+    }
+
+    function highlightPaletteItem(visibleItems) {
+      // Remove previous highlights
+      document.querySelectorAll('.palette-item').forEach(item => {
+        item.classList.remove('bg-neutral-100', 'dark:bg-neutral-800', 'ring-2', 'ring-indigo-500/30');
+      });
+
+      if (visibleItems[selectedPaletteIndex]) {
+        visibleItems[selectedPaletteIndex].classList.add('bg-neutral-100', 'dark:bg-neutral-800', 'ring-2', 'ring-indigo-500/30');
+        // Scroll inside panel safely
+        visibleItems[selectedPaletteIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function paletteNavigate(tabId) {
+      closeCommandPalette();
+      goToTab(tabId);
+    }
+
+    function toggleThemePalette() {
+      closeCommandPalette();
+      toggleDarkMode();
+      showToast("Thème graphique actualisé !");
+    }
+
+    function paletteCopyBrew() {
+      closeCommandPalette();
+      copyBrewCommand();
+    }
+
+    function paletteResetProgress() {
+      closeCommandPalette();
+      resetAllChecklists();
+    }
+
+    // Global Search Utility (Enables instant discovery on all tabs)
+    function globalSearch() {
+      // (Retained for search elements compatibility, Raycast search replaces the standard search gracefully)
+    }
+
+    // Robust Clipboard Utility with Fallback
+    function copyToClipboard(textToCopy, buttonId) {
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      textarea.style.position = 'fixed';
+      document.body.appendChild(textarea);
+      textarea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast("Copié avec succès !");
+        } else {
+          showToast("Échec de la copie. Sélectionnez le texte.");
+        }
+      } catch (err) {
+        showToast("Erreur lors de la copie.");
+      }
+      document.body.removeChild(textarea);
+
+      const btn = document.getElementById(buttonId);
+      if (btn) {
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = `<span>Copié !</span>`;
+        const initialBg = btn.classList.contains('bg-neutral-900') ? 'bg-neutral-900' : 'bg-white';
+        const targetBg = btn.classList.contains('bg-neutral-900') ? 'bg-indigo-600' : 'bg-indigo-100';
+        
+        btn.classList.replace(initialBg, targetBg);
+        setTimeout(() => {
+          btn.innerHTML = originalContent;
+          btn.classList.replace(targetBg, initialBg);
+        }, 1500);
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      if (toast && toastText) {
+        toastText.innerText = message;
+        toast.classList.remove('translate-y-12', 'opacity-0', 'pointer-events-none');
+        toast.classList.add('translate-y-0', 'opacity-100');
+        
+        setTimeout(() => {
+          toast.classList.remove('translate-y-0', 'opacity-100');
+          toast.classList.add('translate-y-12', 'opacity-0', 'pointer-events-none');
+        }, 3000);
+      }
+    }
+
+    // Client-side Filter Utilities for Shortcuts Tab
+    function filterShortcuts(category, btnElement) {
+      const cards = document.querySelectorAll('.shortcut-card');
+      const buttons = document.querySelectorAll('.shortcut-filter-btn');
+
+      buttons.forEach(btn => {
+        btn.className = "shortcut-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition";
+      });
+
+      btnElement.className = "shortcut-filter-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 transition";
+
+      cards.forEach(card => {
+        if (category === 'all' || card.getAttribute('data-category') === category) {
+          card.classList.remove('hidden');
+          card.classList.add('flex');
+        } else {
+          card.classList.remove('flex');
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    function searchApps() {
+      const input = document.getElementById('app-search').value.toLowerCase();
+      const rows = document.querySelectorAll('#apps-table tbody tr');
+
+      rows.forEach(row => {
+        const appName = row.getAttribute('data-app-name').toLowerCase();
+        const textContent = row.textContent.toLowerCase();
+        
+        if (appName.includes(input) || textContent.includes(input)) {
+          row.classList.remove('hidden');
+        } else {
+          row.classList.add('hidden');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
